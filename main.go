@@ -8,7 +8,9 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strconv"
 	str "strings"
+	"time"
 
 	colour "github.com/fatih/color"
 )
@@ -36,8 +38,9 @@ func isDirectory(path string) bool {
 		}
 	}
 	return false
-} */
+} */ // For potential later use.
 
+// Checks whether a particular string is present in the Names of the provided []fs.DirEntry, and returns the index (if any).
 func containsIdx(slice []fs.DirEntry, name string) (bool, int) {
 	for idx, v := range slice {
 		if v.Name() == name {
@@ -191,6 +194,8 @@ func main() {
 		if csv == -1 {
 			fmt.Println("Missing required CSV file '" + boldHiRed(key) + "'. You may have accidentally renamed or deleted said CSV file.")
 			os.Exit(1)
+		} else {
+			fmt.Println("Found '" + boldHiRed(key) + "'.")
 		}
 	}
 
@@ -198,5 +203,47 @@ func main() {
 	var contentsOfCSVs = map[string][][]string{
 		"Apple Music - Top Content.csv": {},
 		"Apple Music Play Activity.csv": {},
+	}
+
+	for key := range contentsOfCSVs {
+		var contents, err = readAllCSV(key, pathToSearch+"/Apple Media Services information/Apple_Media_Services/Apple Music Activity")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		contentsOfCSVs[key] = contents
+		fmt.Println("Loaded '" + boldHiRed(key) + "'.")
+	}
+
+	var yearForReview = time.Now().Year()
+	fmt.Print("\nEnter which year for " + boldHiRed("Year in Review") + " to review. (Leave blank to default to " + boldHiRed(yearForReview) + ") ")
+	var reader = bufio.NewReader(os.Stdin)
+	tmpYear, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatalln(err)
+	}
+	tmpYear = inputCleanse(tmpYear)
+	if tmpYear == "" {
+		fmt.Println("Year to Review: " + boldHiRed(yearForReview))
+	} else {
+		var regex = regexp.MustCompile(`^\d{4}$`)
+		if regex.MatchString(tmpYear) {
+			tmpYearInt, err := strconv.Atoi(tmpYear)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			if tmpYearInt < 2015 { // Year when Apple Music was released.
+				fmt.Println("Cannot review years before " + boldHiRed("2015") + ", as that was before Apple Music existed!")
+				os.Exit(1)
+			} else if tmpYearInt > yearForReview { // 'yearForReview' is still set to current year at this point.
+				fmt.Println("Cannot predict your future listening habits (unfortunately).")
+				os.Exit(1)
+			} else {
+				yearForReview = tmpYearInt
+				fmt.Println("Year to Review: " + boldHiRed(yearForReview))
+			}
+		} else {
+			fmt.Println("Not a valid year (within the last few thousand years, at least 😆).")
+			os.Exit(1)
+		}
 	}
 }
