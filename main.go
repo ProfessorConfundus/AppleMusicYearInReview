@@ -367,4 +367,50 @@ func main() {
 		return topSongsByTimeDescending[i].time_listened_ms > topSongsByTimeDescending[j].time_listened_ms
 	})
 	fmt.Println(boldHiRed("Top Songs") + " calculated.")
+
+	var isGenre = false // Due to the weird arranging of the Top Content CSV, some rows are genres, and others are artists. ¯\_(ツ)_/¯
+	var previousContent = []string{}
+	var topArtists = []artist{}
+	var topGenres = []genre{}
+
+	/*
+		Logic in this loop:
+			'Apple Music - Top Content.csv' contains two types of rows; Artists, and genres.
+			There is only one (hopefully bug-free) way to differentiate between these two rows:
+			Counting the rankings until you get one that's less than or equal to the last.
+			At that point, we know it has changed from counting artists to genres.
+
+			In this code, we keep track of this switch with the bool 'isGenre'.
+	*/
+
+	for idx, row := range contentsOfCSVs["Apple Music - Top Content.csv"] {
+		if idx == 0 {
+			continue
+		} else if idx == 1 {
+			intRow2, err := strconv.Atoi(row[2])
+			fatErr(err)
+			topArtists = append(topArtists, artist{row[1], intRow2})
+		} else {
+			if !isGenre {
+				intRow7, err := strconv.Atoi(row[7])
+				fatErr(err)
+				intPrevCont7, err := strconv.Atoi(previousContent[7])
+				fatErr(err)
+				intRow2, err := strconv.Atoi(row[2])
+				fatErr(err)
+				if intPrevCont7 >= intRow7 {
+					isGenre = true
+					topGenres = append(topGenres, genre{row[1], intRow2})
+				} else {
+					topArtists = append(topArtists, artist{row[1], intRow2})
+				}
+			} else {
+				intRow2, err := strconv.Atoi(row[2])
+				fatErr(err)
+				topGenres = append(topGenres, genre{row[1], intRow2})
+			}
+		}
+		previousContent = row
+	}
+	fmt.Println(boldHiRed("Top Artists") + " and " + boldHiRed("Top Genres") + " calculated.")
 }

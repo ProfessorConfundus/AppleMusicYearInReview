@@ -12,12 +12,10 @@ type song struct {
 
 type artist struct {
 	name             string
-	plays            int
 	time_listened_ms int
 }
 
 type genre struct {
 	name             string
-	plays            int
 	time_listened_ms int
 }
