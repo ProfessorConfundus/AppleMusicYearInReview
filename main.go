@@ -30,7 +30,7 @@ func inputCleanse(input string) string {
 func isDirectory(path string) bool {
 	var fileStat, err = os.Stat(path)
 	if err != nil {
-		fmt.Println("There was an error while checking the entered path. It may not exist, or Year in Review may not have permission to access it.")
+		fmt.Println("There was an error while checking the entered path. It may not exist, or Core may not have permission to access it.")
 		fmt.Print(err)
 		os.Exit(1)
 	}
