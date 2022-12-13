@@ -1,0 +1,38 @@
+Apple ID Number
+Apple Music Subscription	
+Artist Name	
+Build Version	
+Client IP Address	
+Device Identifier	
+End Position In Milliseconds	
+End Reason Type	
+Event End Timestamp	
+Event Reason Hint Type	
+Event Received Timestamp	
+Event Start Timestamp	
+Event Type	
+Feature Name	
+Item Type	
+Media Duration In Milliseconds	
+Media Type	
+Metrics Bucket Id	
+Metrics Client Id	
+Milliseconds Since Play	
+Offline	
+Play Duration Milliseconds	
+Provided Audio Bit Depth	
+Provided Audio Channel	
+Provided Audio Sample Rate	
+Provided Bit Rate	
+Provided Codec	
+Provided Playback Format	
+Session Is Shared	
+Shared Activity Devices-Current	
+Shared Activity Devices-Max	
+Song Name	
+Source Type	
+Start Position In Milliseconds	
+Store Front Name	
+User’s Audio Quality	
+User’s Playback Format	
+UTC Offset In Seconds

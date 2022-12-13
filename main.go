@@ -8,12 +8,18 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	str "strings"
 	"time"
 
 	colour "github.com/fatih/color"
 )
+
+const OVERRIDE_INPUT = true // Required to debug because STUPID DELVE CAN'T HANDLE STDIN. I hate Delve so much.
+const INPUT_OVERRIDE_0 = "y"
+const INPUT_OVERRIDE_1 = "/Users/pc/Documents/Apple Music Year in Review Test/a"
+const INPUT_OVERRIDE_2 = ""
 
 // Trims whitespace and lowercases the input string.
 func inputCleanse(input string) string {
@@ -29,6 +35,13 @@ func isDirectory(path string) bool {
 		os.Exit(1)
 	}
 	return fileStat.IsDir()
+}
+
+// Shortened error handling. Damn it, Go.
+func fatErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 /* func contains(s []string, str string) bool {
@@ -74,23 +87,34 @@ func main() {
 	var pathToSearch string = ""
 	fmt.Println("\nIt is likely that you downloaded your Apple Music data to '" + boldHiRed(userHome+"/Downloads") + "'.")
 	fmt.Print("Would you like for " + boldHiRed("Year in Review") + " to look for your data there? (y/n) ")
-	_, err = fmt.Scanln(&input)
-	if err != nil {
-		fmt.Println("Failed to read your y/n answer.")
-		fmt.Println(err)
-		os.Exit(1)
+	if !OVERRIDE_INPUT {
+		_, err = fmt.Scanln(&input)
+		if err != nil {
+			fmt.Println("Failed to read your y/n answer.")
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	} else {
+		fmt.Println("DEBUG: Input overridden.")
+		input = INPUT_OVERRIDE_0
 	}
 	if inputCleanse(input) == "y" {
 		pathToSearch = fmt.Sprintf("%s%sDownloads", userHome, string(os.PathSeparator))
 	} else if inputCleanse(input) == "n" {
 		fmt.Printf("Enter an absolute path (eg: '/Users/me/Documents') to a folder for searching (your home folder is '%s'): ", userHome)
-		var reader = bufio.NewReader(os.Stdin)
-		pathToSearch, err = reader.ReadString('\n')
-		pathToSearch = str.Trim(pathToSearch, "\n")
-		if err != nil {
-			fmt.Println("Failed to read your entered path.")
-			fmt.Println(err)
-			os.Exit(1)
+		if !OVERRIDE_INPUT {
+			var reader = bufio.NewReader(os.Stdin)
+			pathToSearch, err = reader.ReadString('\n')
+			pathToSearch = str.Trim(pathToSearch, "\n")
+			if err != nil {
+				fmt.Println("Failed to read your entered path.")
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Println("DEBUG: Input overridden.")
+			pathToSearch = INPUT_OVERRIDE_1
+			pathToSearch = str.Trim(pathToSearch, "\n")
 		}
 	} else {
 		fmt.Println("Answer must be 'y' or 'n'.")
@@ -215,11 +239,17 @@ func main() {
 	}
 
 	var yearForReview = time.Now().Year()
+	var tmpYear string
 	fmt.Print("\nEnter which year for " + boldHiRed("Year in Review") + " to review. (Leave blank to default to " + boldHiRed(yearForReview) + ") ")
-	var reader = bufio.NewReader(os.Stdin)
-	tmpYear, err := reader.ReadString('\n')
-	if err != nil {
-		log.Fatalln(err)
+	if !OVERRIDE_INPUT {
+		var reader = bufio.NewReader(os.Stdin)
+		tmpYear, err = reader.ReadString('\n')
+		if err != nil {
+			log.Fatalln(err)
+		}
+	} else {
+		fmt.Println("DEBUG: Input overridden.")
+		tmpYear = INPUT_OVERRIDE_2
 	}
 	tmpYear = inputCleanse(tmpYear)
 	if tmpYear == "" {
@@ -246,4 +276,95 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	fmt.Println("\nCalculating stats...")
+
+	var total_listen_duration int // In milliseconds.
+
+	for idx, row := range contentsOfCSVs["Apple Music Play Activity.csv"] {
+		if idx == 0 {
+			continue
+		}
+		var listen_duration int
+		if date, _ := time.Parse(time.RFC3339, row[10]); row[21] != "" && date.Unix() >= time.Date(yearForReview, time.January, 1, 0, 0, 0, 0, time.UTC).Unix() { // RFC3339 format example: 2006-01-02T15:04:05Z
+			listen_duration, err = strconv.Atoi(row[21])
+			if err != nil {
+				fmt.Println("Error calculating total listen duration.")
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
+		total_listen_duration += listen_duration
+	}
+	fmt.Println(boldHiRed("Total Listen Time") + " calculated.")
+	//fmt.Println(total_listen_duration)
+
+	var playedSongs = map[string]song{}
+	var borkedSongs int // Just an interesting stat to see how many songs had their playback borked.
+
+	for idx, row := range contentsOfCSVs["Apple Music Play Activity.csv"] {
+		if idx == 0 {
+			continue
+		}
+		// Checks if date is within yearForReview, otherwise it skips to the next row.
+		if date, _ := time.Parse(time.RFC3339, row[10]); date.Unix() < time.Date(yearForReview, time.January, 1, 0, 0, 0, 0, time.UTC).Unix() { // RFC3339 format example: 2006-01-02T15:04:05Z
+			continue
+		}
+		if currentSong, ok := playedSongs[fmt.Sprintf("%s - %s", row[31], row[2])]; ok {
+			if row[15] == "0" || row[7] == "" || row[21] == "" { // If any of these conditions are met, we assume playback broke.
+				borkedSongs++
+				continue
+			}
+			if row[13] == "Siri-actions-local" || row[13] == "siri" {
+				currentSong.plays_via_siri = 1
+			}
+			if row[7] == "TRACK_SKIPPED_FORWARDS" {
+				currentSong.skips += 1
+			}
+			tmpTimeListened, err := strconv.Atoi(row[21])
+			fatErr(err)
+			if tmpTimeListened > 0 {
+				currentSong.plays += 1
+			}
+			currentSong.time_listened_ms += tmpTimeListened
+			playedSongs[fmt.Sprintf("%s - %s", row[31], row[2])] = currentSong
+		} else {
+			if row[15] == "0" || row[7] == "" || row[21] == "" { // If any of these conditions are met, we assume playback broke.
+				borkedSongs++
+				continue
+			}
+			currentSong.artist = row[2]
+			currentSong.length_ms, err = strconv.Atoi(row[15])
+			fatErr(err)
+			currentSong.name = row[31]
+			if row[13] == "Siri-actions-local" || row[13] == "siri" {
+				currentSong.plays_via_siri = 1
+			}
+			if row[7] == "TRACK_SKIPPED_FORWARDS" {
+				currentSong.skips += 1
+			}
+			currentSong.time_listened_ms, err = strconv.Atoi(row[21])
+			fatErr(err)
+			if currentSong.time_listened_ms > 0 {
+				currentSong.plays += 1
+			}
+			playedSongs[fmt.Sprintf("%s - %s", row[31], row[2])] = currentSong
+		}
+	}
+	var tmpSongList = []song{}
+	for _, val := range playedSongs {
+		tmpSongList = append(tmpSongList, val)
+	}
+	var topSongsByPlaysDescending = make([]song, len(tmpSongList))
+	copy(topSongsByPlaysDescending, tmpSongList)
+	var topSongsByTimeDescending = make([]song, len(tmpSongList))
+	copy(topSongsByTimeDescending, tmpSongList)
+
+	sort.SliceStable(topSongsByPlaysDescending, func(i, j int) bool {
+		return topSongsByPlaysDescending[i].plays > topSongsByPlaysDescending[j].plays // Using > rather than < makes the order descending, rather than ascending.
+	})
+	sort.SliceStable(topSongsByTimeDescending, func(i, j int) bool {
+		return topSongsByTimeDescending[i].time_listened_ms > topSongsByTimeDescending[j].time_listened_ms
+	})
+	fmt.Println(boldHiRed("Top Songs") + " calculated.")
 }
