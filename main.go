@@ -16,7 +16,7 @@ import (
 	colour "github.com/fatih/color"
 )
 
-const OVERRIDE_INPUT = true // Required to debug because STUPID DELVE CAN'T HANDLE STDIN. I hate Delve so much.
+const OVERRIDE_INPUT = false // Required to debug because STUPID DELVE CAN'T HANDLE STDIN. I hate Delve so much.
 const INPUT_OVERRIDE_0 = "y"
 const INPUT_OVERRIDE_1 = "/Users/pc/Documents/Apple Music Year in Review Test/a"
 const INPUT_OVERRIDE_2 = ""
