@@ -72,7 +72,7 @@ func main() {
 	fmt.Print("\033c\033[H")
 
 	var boldHiRed = colour.New(colour.Bold, colour.FgHiRed).SprintFunc()
-	fmt.Println("Welcome to the unofficial", boldHiRed("Apple Music Year in Review")+".")
+	fmt.Println("Welcome to the unofficial", boldHiRed("Apple Music Core")+", otherwise known as "+boldHiRed("Apple Music Year In Review!")+".")
 	fmt.Println("\n " + boldHiRed("1.") + " First of all, make sure you have obtained a copy of your Apple Media Services information from " + boldHiRed("https://privacy.apple.com") + ". (note this process can take up to 7 days)")
 	fmt.Println(" " + boldHiRed("2.") + " Once you have your data, open the '" + boldHiRed("Apple Media Services information") + "' folder you downloaded (this may come as a zip you need to extract).")
 	fmt.Println(" " + boldHiRed("3.") + " Then " + boldHiRed("UNZIP") + " the '" + boldHiRed("Apple_Media_Services.zip") + "' file within and open the '" + boldHiRed("Apple_Media_Services") + "' folder.")
@@ -86,7 +86,7 @@ func main() {
 	var input string = ""
 	var pathToSearch string = ""
 	fmt.Println("\nIt is likely that you downloaded your Apple Music data to '" + boldHiRed(userHome+"/Downloads") + "'.")
-	fmt.Print("Would you like for " + boldHiRed("Year in Review") + " to look for your data there? (y/n) ")
+	fmt.Print("Would you like for " + boldHiRed("Core") + " to look for your data there? (y/n) ")
 	if !OVERRIDE_INPUT {
 		_, err = fmt.Scanln(&input)
 		if err != nil {
@@ -240,7 +240,7 @@ func main() {
 
 	var yearForReview = time.Now().Year()
 	var tmpYear string
-	fmt.Print("\nEnter which year for " + boldHiRed("Year in Review") + " to review. (Leave blank to default to " + boldHiRed(yearForReview) + ") ")
+	fmt.Print("\nEnter which year for " + boldHiRed("Core") + " to review. (Leave blank to default to " + boldHiRed(yearForReview) + ") ")
 	if !OVERRIDE_INPUT {
 		var reader = bufio.NewReader(os.Stdin)
 		tmpYear, err = reader.ReadString('\n')
